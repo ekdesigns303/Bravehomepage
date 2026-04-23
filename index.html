@@ -2,164 +2,80 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Brave Home</title>
+    <title>CleanTube</title>
     <style>
-        :root { --bg: #000; --card: #1a1a1a; --text: #fff; --accent: #ff5000; }
-        body { background: var(--bg); color: var(--text); font-family: sans-serif; margin: 0; height: 100vh; overflow: hidden; touch-action: none; }
+        :root { --bg: #0f0f0f; --text: #ffffff; --red: #ff0000; --card: #1e1e1e; }
+        body { background: var(--bg); color: var(--text); font-family: 'Roboto', sans-serif; margin: 0; display: flex; flex-direction: column; height: 100vh; }
         
-        #edit-mode-toggle { position: fixed; top: 20px; right: 20px; background: var(--card); border: 1px solid #333; color: #888; padding: 10px; border-radius: 12px; z-index: 50; }
+        /* Header */
+        header { background: #202020; padding: 10px 20px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #333; }
+        .logo { color: var(--red); font-weight: bold; font-size: 1.5rem; text-decoration: none; }
+        .search-box { display: flex; flex-grow: 0.5; }
+        input { width: 100%; padding: 10px; border: 1px solid #333; background: #000; color: #fff; border-radius: 20px 0 0 20px; outline: none; }
+        button { padding: 0 20px; border: none; background: #333; color: white; border-radius: 0 20px 20px 0; cursor: pointer; }
+        button:hover { background: #444; }
 
-        /* App Grid Logic */
-        #app-grid { 
-            display: grid; grid-template-columns: repeat(4, 1fr); 
-            gap: 20px; padding: 80px 20px; 
-            max-width: 500px; margin: 0 auto; 
-            transition: all 0.3s ease;
-        }
+        /* Main Layout */
+        main { display: flex; flex-grow: 1; overflow: hidden; }
+        #sidebar { width: 200px; background: #0f0f0f; padding: 15px; border-right: 1px solid #333; font-size: 0.9rem; }
+        #sidebar div { padding: 10px; cursor: pointer; border-radius: 8px; }
+        #sidebar div:hover { background: #2a2a2a; }
 
-        /* Hide Grid in Search Mode */
-        body.searching #app-grid, body.searching #edit-mode-toggle {
-            opacity: 0;
-            transform: scale(0.9);
-            pointer-events: none;
-        }
-
-        .app-container { position: relative; display: flex; flex-direction: column; align-items: center; }
-        .icon-box { width: 65px; height: 65px; background: var(--card); border-radius: 18px; display: flex; justify-content: center; align-items: center; margin-bottom: 6px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); overflow: hidden; }
-        .icon-box img { width: 70%; height: 70%; object-fit: contain; }
-        .app-label { font-size: 0.75rem; opacity: 0.8; }
-
-        /* Search & Suggestions */
-        .search-wrapper { position: fixed; left: 0; right: 0; bottom: 40px; padding: 0 20px; transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1); z-index: 1000; }
-        body.searching .search-wrapper { bottom: calc(100vh - 75px); }
-
-        .search-form { background: #111; border-radius: 30px; padding: 14px 20px; display: flex; border: 1px solid #444; }
-        .search-form input { flex: 1; background: none; border: none; color: white; font-size: 1.1rem; outline: none; }
-
-        #suggestions {
-            display: none; background: #111; margin-top: 10px; border-radius: 20px;
-            overflow: hidden; border: 1px solid #333;
-        }
-        body.searching #suggestions { display: block; }
-        .sugg-item { padding: 15px 20px; border-bottom: 1px solid #222; color: #ccc; cursor: pointer; }
-        .sugg-item:last-child { border: none; }
-
-        /* Wiggle & Badges */
-        @keyframes wiggle { 0% { transform: rotate(-2deg); } 100% { transform: rotate(2deg); } }
-        body.edit-mode .app-container { animation: wiggle 0.2s infinite alternate ease-in-out; }
-        .delete-badge { display: none; position: absolute; top: -5px; left: -5px; background: #ff3b30; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; z-index: 60; }
-        body.edit-mode .delete-badge { display: flex; align-items: center; justify-content: center; }
-
-        /* Modal */
-        #modal { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: var(--card); padding: 25px; border-radius: 24px; z-index: 2000; width: 80%; max-width: 300px; border: 1px solid #444; }
-        #modal input { width: 100%; background: #000; border: 1px solid #444; color: #fff; padding: 12px; margin: 10px 0; border-radius: 12px; box-sizing: border-box; }
-        .btn-save { width: 100%; background: var(--accent); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; }
+        /* Video Area */
+        #content-area { flex-grow: 1; padding: 20px; overflow-y: auto; }
+        iframe { width: 100%; height: 80vh; border: none; border-radius: 12px; background: #000; }
+        
+        /* Message */
+        .status { margin-bottom: 10px; color: #aaa; font-size: 0.8rem; }
     </style>
 </head>
-<body id="main-body">
+<body>
 
-<button id="edit-mode-toggle" onclick="toggleEditMode()">✎</button>
-<div id="app-grid"></div>
+<header>
+    <a href="#" class="logo" onclick="location.reload()">CleanTube</a>
+    <div class="search-box">
+        <input type="text" id="q" placeholder="Search for videos (Shorts-free)...">
+        <button onclick="updateView()">Search</button>
+    </div>
+    <div style="width: 50px;"></div>
+</header>
 
-<div class="search-wrapper">
-    <form class="search-form" action="https://search.brave.com/search" method="get">
-        <input type="text" id="search-input" name="q" placeholder="Brave Search..." autocomplete="off">
-    </form>
-    <div id="suggestions"></div>
-</div>
+<main>
+    <div id="sidebar">
+        <div onclick="setFeed('trending')">🔥 Trending</div>
+        <div onclick="setFeed('music')">🎵 Music</div>
+        <div onclick="setFeed('gaming')">🎮 Gaming</div>
+        <div onclick="setFeed('news')">📰 News</div>
+    </div>
 
-<div id="modal">
-    <h3 style="margin:0 0 10px 0">Add App</h3>
-    <input type="text" id="app-name" placeholder="App Name">
-    <input type="text" id="app-url" placeholder="https://...">
-    <button class="btn-save" id="save-btn">Save</button>
-</div>
+    <div id="content-area">
+        <div class="status" id="statusText">Showing: Trending</div>
+        <iframe id="viewer" src="https://www.youtube.com/embed?listType=search&list=trending"></iframe>
+    </div>
+</main>
 
 <script>
-    let apps = JSON.parse(localStorage.getItem('myApps')) || [];
-    const grid = document.getElementById('app-grid');
-    const body = document.getElementById('main-body');
-    const searchInput = document.getElementById('search-input');
-    const suggBox = document.getElementById('suggestions');
+    const viewer = document.getElementById('viewer');
+    const status = document.getElementById('statusText');
 
-    // Swipe Logic
-    let touchStartY = 0;
-    document.addEventListener('touchstart', e => touchStartY = e.touches[0].clientY);
-    document.addEventListener('touchend', e => {
-        let touchEndY = e.changedTouches[0].clientY;
-        if (body.classList.contains('searching') && touchEndY > touchStartY + 100) {
-            closeSearch();
+    function updateView() {
+        const query = document.getElementById('q').value;
+        if (query) {
+            viewer.src = `https://www.youtube.com/embed?listType=search&list=${encodeURIComponent(query)}`;
+            status.innerText = `Search results for: ${query}`;
         }
+    }
+
+    function setFeed(type) {
+        viewer.src = `https://www.youtube.com/embed?listType=search&list=${type}`;
+        status.innerText = `Showing: ${type.charAt(0).toUpperCase() + type.slice(1)}`;
+    }
+
+    // Allow "Enter" key to search
+    document.getElementById('q').addEventListener("keypress", function(event) {
+        if (event.key === "Enter") updateView();
     });
-
-    function closeSearch() {
-        body.classList.remove('searching');
-        searchInput.blur();
-        suggBox.innerHTML = '';
-    }
-
-    // Brave Autocomplete
-    searchInput.addEventListener('input', async (e) => {
-        const query = e.target.value;
-        if (query.length < 2) { suggBox.innerHTML = ''; return; }
-        
-        try {
-            const res = await fetch(`https://search.brave.com/api/suggest?q=${encodeURIComponent(query)}`);
-            const data = await res.json();
-            const suggestions = data[1];
-            
-            suggBox.innerHTML = suggestions.slice(0, 5).map(s => `
-                <div class="sugg-item" onclick="submitSearch('${s}')">${s}</div>
-            `).join('');
-        } catch (err) { console.error("Autofill failed"); }
-    });
-
-    function submitSearch(val) {
-        window.location.href = `https://search.brave.com/search?q=${encodeURIComponent(val)}`;
-    }
-
-    function toggleEditMode() {
-        body.classList.toggle('edit-mode');
-        render();
-    }
-
-    function render() {
-        grid.innerHTML = apps.map((app, i) => `
-            <div class="app-container">
-                <button class="delete-badge" onclick="deleteApp(${i})">−</button>
-                <a href="${body.classList.contains('edit-mode') ? '#' : app.url}" class="app-link" style="text-decoration:none; color:inherit; display:flex; flex-direction:column; align-items:center;">
-                    <div class="icon-box">
-                        <img src="https://www.google.com/s2/favicons?sz=128&domain=${app.url}" onerror="this.src='https://cdn-icons-png.flaticon.com/512/1243/1243933.png'">
-                    </div>
-                    <span class="app-label">${app.name}</span>
-                </a>
-            </div>
-        `).join('') + `
-            <div class="app-container" onclick="openModal()">
-                <div class="icon-box" style="border:1px dashed #444; background:transparent;"><span style="font-size:2rem; opacity:0.3">+</span></div>
-                <span class="app-label">Add</span>
-            </div>
-        `;
-    }
-
-    function openModal() { document.getElementById('modal').style.display = 'block'; }
-    function deleteApp(index) { apps.splice(index, 1); save(); }
-    function save() { localStorage.setItem('myApps', JSON.stringify(apps)); render(); }
-
-    document.getElementById('save-btn').onclick = () => {
-        let name = document.getElementById('app-name').value;
-        let url = document.getElementById('app-url').value;
-        if(name && url) {
-            if(!url.startsWith('http')) url = 'https://' + url;
-            apps.push({name, url});
-            save();
-            document.getElementById('modal').style.display = 'none';
-        }
-    };
-
-    searchInput.onfocus = () => body.classList.add('searching');
-    render();
 </script>
+
 </body>
 </html>
